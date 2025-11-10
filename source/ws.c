@@ -1,7 +1,7 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <stdio.h>
-#include "include/MinHook.h"
+#include "libs/MinHook/MinHook.h"
 #include "ws.h"
 #include "misc.h"
 #include "plugins.h"
