@@ -36,7 +36,7 @@ BOOL APIENTRY DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
 void WINAPI log_ws(SOCKET *s, const char *buf, int *len, int *flags)
 {
 	struct sockaddr_in info;
-	socklen_t infolen = sizeof(info);
+	int infolen = sizeof(info);
 	getpeername(*s, (struct sockaddr*)&info, &infolen);
 	const uint16_t port = ntohs(info.sin_port);
 
