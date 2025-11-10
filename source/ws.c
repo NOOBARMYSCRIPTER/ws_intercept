@@ -15,7 +15,7 @@ struct WS_handler ws_handlers;
 
 typedef int (WINAPI *tWS)(SOCKET, const char*, int, int); //For base functions
 
-static uintptr_t WINAPI initialize(LPVOID param);
+static DWORD WINAPI initialize(LPVOID param);
 static void revert();
 
 static int WINAPI repl_recv(SOCKET s, const char *buf, int len, int flags);
@@ -81,7 +81,7 @@ BOOL APIENTRY DllMain(HINSTANCE instance, uintptr_t reason, LPVOID reserved)
 	return TRUE;
 }
 
-static uintptr_t WINAPI initialize(LPVOID param)
+static DWORD WINAPI initialize(LPVOID param)
 {
 	MessageBoxA(NULL, "DLL loaded!", "Debug", MB_OK);
     uintptr_t addr;
