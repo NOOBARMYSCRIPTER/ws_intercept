@@ -3,7 +3,7 @@ SOURCE := log
 LWS := -lws
 BASE := ../../..
 
-CC  := i686-w64-mingw32-gcc
+CC  := x86_64-w64-mingw32-gcc
 
 STD := c99
 CFLAGS := -std=$(STD) -O3 -fdata-sections -ffunction-sections -flto -Wall
@@ -15,5 +15,6 @@ all: $(BASE)/plugins/$(TARGET).dll
 
 $(BASE)/plugins/$(TARGET).dll: $(SOURCES)
 	$(CC) $(SOURCES) $(CFLAGS) $(LDFLAGS) -o $(BASE)/plugins/$(TARGET).dll
+
 clean:
 	rm -f $(BASE)/plugins/$(TARGET).dll
