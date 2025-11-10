@@ -38,8 +38,10 @@ jobs:
           PATH: /mingw32/bin:/usr/bin:/bin:/mingw64/bin
         run: |
           echo "=== Building i686 core (ws.dll + libws.a) ==="
-          mkdir -p build shared plugins
+          make -C $GITHUB_WORKSPACE clean || true
           CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar make -C $GITHUB_WORKSPACE ws.dll -j$(nproc) || exit 1
+          mkdir -p out32
+          cp -v ws.dll out32/
 
       # -----------------------------
       # Build x86 plugins
@@ -52,12 +54,10 @@ jobs:
         run: |
           echo "=== Building i686 plugins ==="
           for dir in source/plugins/*/ ; do
-            make -C "$dir" || true
+            make -C "$dir" clean || true
+            make -C "$dir" CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar || true
           done
-
-          rm -rf out32
           mkdir -p out32/plugins out32/shared out32/build
-          cp -v ws.dll out32/
           cp -v plugins/*.dll out32/plugins/ 2>/dev/null || true
           cp -v shared/* out32/shared/
           cp -v build/* out32/build/ 2>/dev/null || true
@@ -72,8 +72,10 @@ jobs:
           PATH: /mingw64/bin:/usr/bin:/bin:/mingw32/bin
         run: |
           echo "=== Building x86_64 core (ws.dll + libws.a) ==="
-          mkdir -p build shared plugins
+          make -C $GITHUB_WORKSPACE clean || true
           CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C $GITHUB_WORKSPACE ws.dll -j$(nproc) || exit 1
+          mkdir -p out64
+          cp -v ws.dll out64/
 
       # -----------------------------
       # Build x64 plugins
@@ -86,12 +88,10 @@ jobs:
         run: |
           echo "=== Building x86_64 plugins ==="
           for dir in source/plugins/*/ ; do
-            make -C "$dir" || true
+            make -C "$dir" clean || true
+            make -C "$dir" CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar || true
           done
-
-          rm -rf out64
           mkdir -p out64/plugins out64/shared out64/build
-          cp -v ws.dll out64/
           cp -v plugins/*.dll out64/plugins/ 2>/dev/null || true
           cp -v shared/* out64/shared/
           cp -v build/* out64/build/ 2>/dev/null || true
