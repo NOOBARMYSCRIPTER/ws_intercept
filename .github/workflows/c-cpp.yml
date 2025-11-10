@@ -29,9 +29,9 @@ jobs:
             git
 
       # -----------------------------
-      # Build x86 core first
+      # Build x86 core (ws.dll + libws.a)
       # -----------------------------
-      - name: Build x86 core (ws.dll + libws.a)
+      - name: Build x86 core
         shell: msys2 {0}
         env:
           MSYSTEM: MINGW32
@@ -39,7 +39,7 @@ jobs:
         run: |
           echo "=== Building i686 core (ws.dll + libws.a) ==="
           mkdir -p build shared plugins
-          CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar make -C $GITHUB_WORKSPACE ws.dll -j$(nproc) || (echo "core make failed"; exit 1)
+          CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar make -C $GITHUB_WORKSPACE ws.dll -j$(nproc) || exit 1
 
       # -----------------------------
       # Build x86 plugins
@@ -51,29 +51,21 @@ jobs:
           PATH: /mingw32/bin:/usr/bin:/bin:/mingw64/bin
         run: |
           echo "=== Building i686 plugins ==="
-          make -C $GITHUB_WORKSPACE source/plugins/ffxiv_pkt_log || true
-          make -C $GITHUB_WORKSPACE source/plugins/ffxiv_pkt_log_2 || true
-          make -C $GITHUB_WORKSPACE source/plugins/log || true
+          for dir in source/plugins/*/ ; do
+            make -C "$dir" || true
+          done
 
-          # Создаём структуру out32 и копируем все нужные файлы в один дроп
-          rm -rf out32 || true
-          mkdir -p out32
-          # копируем основной DLL
-          cp -v "$GITHUB_WORKSPACE/ws.dll" out32/ 2>/dev/null || true
-          # копируем плагины
-          mkdir -p out32/plugins
-          cp -v "$GITHUB_WORKSPACE/plugins/"*.dll out32/plugins/ 2>/dev/null || true
-          # копируем shared (libws.a и т.п.)
-          mkdir -p out32/shared
-          cp -v "$GITHUB_WORKSPACE/shared/"* out32/shared/ 2>/dev/null || true
-          # копируем build (object files) для отладки (опционально)
-          mkdir -p out32/build
-          cp -v "$GITHUB_WORKSPACE/build/"* out32/build/ 2>/dev/null || true
+          rm -rf out32
+          mkdir -p out32/plugins out32/shared out32/build
+          cp -v ws.dll out32/
+          cp -v plugins/*.dll out32/plugins/ 2>/dev/null || true
+          cp -v shared/* out32/shared/
+          cp -v build/* out32/build/ 2>/dev/null || true
 
       # -----------------------------
-      # Build x64 core first
+      # Build x64 core (ws.dll + libws.a)
       # -----------------------------
-      - name: Build x64 core (ws.dll + libws.a)
+      - name: Build x64 core
         shell: msys2 {0}
         env:
           MSYSTEM: MINGW64
@@ -81,7 +73,7 @@ jobs:
         run: |
           echo "=== Building x86_64 core (ws.dll + libws.a) ==="
           mkdir -p build shared plugins
-          CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C $GITHUB_WORKSPACE ws.dll -j$(nproc) || (echo "core make failed"; exit 1)
+          CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C $GITHUB_WORKSPACE ws.dll -j$(nproc) || exit 1
 
       # -----------------------------
       # Build x64 plugins
@@ -93,41 +85,39 @@ jobs:
           PATH: /mingw64/bin:/usr/bin:/bin:/mingw32/bin
         run: |
           echo "=== Building x86_64 plugins ==="
-          make -C $GITHUB_WORKSPACE source/plugins/ffxiv_pkt_log || true
-          make -C $GITHUB_WORKSPACE source/plugins/ffxiv_pkt_log_2 || true
-          make -C $GITHUB_WORKSPACE source/plugins/log || true
+          for dir in source/plugins/*/ ; do
+            make -C "$dir" || true
+          done
 
-          # Создаём структуру out64 и копируем все нужные файлы в один дроп
-          rm -rf out64 || true
-          mkdir -p out64
-          # копируем основной DLL
-          cp -v "$GITHUB_WORKSPACE/ws.dll" out64/ 2>/dev/null || true
-          # копируем плагины
-          mkdir -p out64/plugins
-          cp -v "$GITHUB_WORKSPACE/plugins/"*.dll out64/plugins/ 2>/dev/null || true
-          # копируем shared (libws.a и т.п.)
-          mkdir -p out64/shared
-          cp -v "$GITHUB_WORKSPACE/shared/"* out64/shared/ 2>/dev/null || true
-          # копируем build (object files) для отладки (опционально)
-          mkdir -p out64/build
-          cp -v "$GITHUB_WORKSPACE/build/"* out64/build/ 2>/dev/null || true
+          rm -rf out64
+          mkdir -p out64/plugins out64/shared out64/build
+          cp -v ws.dll out64/
+          cp -v plugins/*.dll out64/plugins/ 2>/dev/null || true
+          cp -v shared/* out64/shared/
+          cp -v build/* out64/build/ 2>/dev/null || true
 
+      # -----------------------------
+      # List built outputs
+      # -----------------------------
       - name: List built outputs
         shell: msys2 {0}
         run: |
           echo "=== out32 ==="
-          ls -la out32 || true
+          ls -la out32
           echo "=== out32/plugins ==="
-          ls -la out32/plugins || true
+          ls -la out32/plugins
           echo "=== out32/shared ==="
-          ls -la out32/shared || true
+          ls -la out32/shared
           echo "=== out64 ==="
-          ls -la out64 || true
+          ls -la out64
           echo "=== out64/plugins ==="
-          ls -la out64/plugins || true
+          ls -la out64/plugins
           echo "=== out64/shared ==="
-          ls -la out64/shared || true
+          ls -la out64/shared
 
+      # -----------------------------
+      # Upload artifacts
+      # -----------------------------
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
