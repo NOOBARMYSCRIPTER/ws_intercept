@@ -3,6 +3,7 @@
 
 #include <windows.h>
 #include "list.h"
+#include "ws.h"
 
 void load_plugins(LPCTSTR directory, struct WS_plugins *list);
 
