@@ -1,7 +1,9 @@
 #ifndef MISC_H
 #define MISC_H
 
-BOOL apply_patch(BYTE eType, DWORD dwAddress, const void *pTarget,DWORD *orig_size, BYTE *replaced);
-void exec_copy(DWORD addr, BYTE *replaced, DWORD orig_size);
+#include <windows.h>
+
+BOOL apply_patch(BYTE eType, SIZE_T dwAddress, const void *pTarget, SIZE_T *orig_size, BYTE *replaced);
+void exec_copy(SIZE_T addr, BYTE *replaced, SIZE_T orig_size);
 
 #endif
