@@ -16,34 +16,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup MSYS2 (basic)
+      - name: Setup MSYS2 and install packages
         uses: msys2/setup-msys2@v2
         with:
           update: false
-
-      - name: Update pacman DB and install toolchains
-        shell: msys2 {0}
-        run: |
-          set -e
-          echo "::group::pacman update (may take some time)"
-          pacman -Sy --noconfirm
-          pacman -Syu --noconfirm
-          echo "::endgroup::"
-          echo "::group::install mingw toolchains and build deps"
-          pacman -S --noconfirm \
-            mingw-w64-i686-toolchain \
-            mingw-w64-x86_64-toolchain \
-            make \
-            pkg-config \
-            unzip \
+          install: >-
+            mingw-w64-x86_64-toolchain
+            mingw-w64-i686-toolchain
+            make
+            pkg-config
+            unzip
             git
-          echo "::endgroup::"
-          echo "=== check installed compilers ==="
-          which i686-w64-mingw32-gcc || true
-          which x86_64-w64-mingw32-gcc || true
-          echo "=== msys2 setup done ==="
 
-      # Build 32-bit (i686)
       - name: Build x86 (i686)
         shell: msys2 {0}
         env:
@@ -51,14 +35,14 @@ jobs:
         run: |
           echo "=== Building i686 (i686-w64-mingw32) ==="
           uname -a
-          rm -rf build || true
-          mkdir -p build
+          rm -rf build32 || true
+          mkdir -p build32
+          cd build32
           CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar make -C .. -j$(nproc) || (echo "make failed"; exit 1)
           mkdir -p out32/plugins
-          cp -v ws.dll out32/ 2>/dev/null || true
-          cp -v plugins/*.dll out32/plugins/ 2>/dev/null || true
+          cp -v ../ws.dll ./out32/ 2>/dev/null || true
+          cp -v ../plugins/*.dll ./out32/plugins/ 2>/dev/null || true
 
-      # Build 64-bit (x86_64)
       - name: Build x64 (x86_64)
         shell: msys2 {0}
         env:
@@ -68,12 +52,12 @@ jobs:
           uname -a
           rm -rf build64 || true
           mkdir -p build64
+          cd build64
           CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C .. -j$(nproc) || (echo "make failed"; exit 1)
           mkdir -p out64/plugins
-          cp -v ws.dll out64/ 2>/dev/null || true
-          cp -v plugins/*.dll out64/plugins/ 2>/dev/null || true
+          cp -v ../ws.dll ./out64/ 2>/dev/null || true
+          cp -v ../plugins/*.dll ./out64/plugins/ 2>/dev/null || true
 
-      # Show built files (debug)
       - name: List built outputs
         shell: msys2 {0}
         run: |
@@ -82,7 +66,6 @@ jobs:
           echo "=== out64 ==="
           ls -la out64 || true
 
-      # Upload artifacts
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
