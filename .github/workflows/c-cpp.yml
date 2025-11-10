@@ -40,6 +40,7 @@ jobs:
           echo "=== Preparing MinHook import library ==="
           mkdir -p libs/MinHook
           cp source/bin/MinHook.x64.dll libs/MinHook/
+          cp source/include/MinHook.h libs/MinHook/
           cd libs/MinHook
           gendef MinHook.x64.dll
           x86_64-w64-mingw32-dlltool -d MinHook.x64.def -l libMinHook.a
