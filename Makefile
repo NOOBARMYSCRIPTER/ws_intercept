@@ -10,13 +10,14 @@ BUILD := $(BASE)/build
 PLUGINS := $(BASE)/plugins
 SHARED := $(BASE)/shared
 SRC := $(BASE)/source
+MINHOOK_DIR := $(BASE)/libs/MinHook
 
 CC  ?= i686-w64-mingw32-gcc
 AR  ?= i686-w64-mingw32-ar
 
 STD := c99
-CFLAGS := -std=$(STD) -O3 -fdata-sections -ffunction-sections -flto -DEXPORT -Wall -shared
-LDFLAGS := -lws2_32 -liphlpapi -lpsapi -static -shared -Wl,--gc-sections -Wl,--out-implib,shared/lib$(TARGET).a -s
+CFLAGS := -std=$(STD) -O3 -fdata-sections -ffunction-sections -flto -DEXPORT -Wall -shared -I$(MINHOOK_DIR)
+LDFLAGS := -L$(MINHOOK_DIR) -lMinHook -lws2_32 -liphlpapi -lpsapi -static -shared -Wl,--gc-sections -Wl,--out-implib,shared/lib$(TARGET).a -s
 
 SOURCES := $(foreach FILE,$(SOURCE),$(FILE).c)
 O_SOURCE := $(foreach FILE,$(SOURCES),$(SRC)/$(FILE))
@@ -24,10 +25,11 @@ O_SOURCE := $(foreach FILE,$(SOURCES),$(SRC)/$(FILE))
 OBJ := $(foreach FILE,$(SOURCE),$(FILE).o)
 O_OBJS := $(foreach FILE,$(OBJ),$(BUILD)/$(FILE))
 
-#Confusing, I know, this is to build every plugin subdirectory
+# Build plugin subdirectories
 PLUGINSRC := $(wildcard $(SRC)/$(PLUGINS)/*/.)
 
-.PHONY: $(PLUGINSRC) #Gotta run this regardless of timestamp on the folder, let the plugin Makefile handle things 
+.PHONY: $(PLUGINSRC) all plugin clean
+
 all: $(BUILD) $(SHARED) $(TARGET_OUT) $(PLUGINS) $(PLUGINSRC)
 
 plugin: $(PLUGINS) $(PLUGINSRC)
@@ -46,11 +48,11 @@ $(BUILD)/%.o: $(SRC)/%.c
 
 $(SRC)/%.c: $(SRC)/%.h
 
-#Plugins
+# Plugins
 $(PLUGINSRC):
 	$(MAKE) -C $@
 
-#Make directories if necessary
+# Make directories if necessary
 $(BUILD):
 	mkdir $(BUILD)
 
