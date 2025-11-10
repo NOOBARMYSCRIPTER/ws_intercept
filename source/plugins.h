@@ -1,7 +1,14 @@
 #ifndef PLUGINS_H
 #define PLUGINS_H
-#include "ws.h"
 
-void load_plugins(LPCTSTR, struct WS_plugins*);
+#include <windows.h>
+#include "list.h"
 
-#endif //PLUGINS_H
+struct WS_plugins {
+    struct list_head plugins;
+    HMODULE plugin;
+};
+
+void load_plugins(LPCTSTR directory, struct WS_plugins *list);
+
+#endif // PLUGINS_H
