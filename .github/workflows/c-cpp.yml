@@ -43,7 +43,7 @@ jobs:
           cp source/include/MinHook.h libs/MinHook/
           cd libs/MinHook
           gendef MinHook.x64.dll
-          x86_64-w64-mingw32-dlltool -d MinHook.x64.def -l libMinHook.a
+          dlltool -d MinHook.x64.def -l libMinHook.a
 
       # -----------------------------
       # Build x64 core (ws.dll + libws.a)
