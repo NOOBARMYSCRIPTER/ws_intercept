@@ -65,10 +65,12 @@ BOOL APIENTRY DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
 	{
 		case DLL_PROCESS_ATTACH:
 		{
+			MessageBoxA(NULL, "DLL loaded!", "Debug", MB_OK);
 			CreateThread(NULL,0,initialize,NULL,0,NULL);
 			break;
 		}
 		case DLL_PROCESS_DETACH:
+			MessageBoxA(NULL, "DLL deloaded!", "Debug", MB_OK);
 			revert();
 			list_for_each(t, &ws_plugins.plugins) //TODO: Change this to use unregister_handler instead, so it'll delete the lists properly :/
 				FreeLibrary(list_entry(t, struct WS_plugins, plugins)->plugin);
