@@ -65,12 +65,6 @@ BOOL APIENTRY DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
 	{
 		case DLL_PROCESS_ATTACH:
 		{
-#ifdef APPLICATION_NAME		
-		 	char moduleName[MAX_PATH];
-			GetModuleBaseName(GetCurrentProcess(), NULL, moduleName, MAX_PATH);
-			if (strcmp(moduleName, APPLICATION_NAME))
-				return FALSE;
-#endif				
 			CreateThread(NULL,0,initialize,NULL,0,NULL);
 			break;
 		}
@@ -93,9 +87,22 @@ static DWORD WINAPI initialize(LPVOID param)
     BYTE replaced[10];
     DWORD orig_size;
     char cwdBuf[MAX_PATH];
+    char tmpPath[MAX_PATH];
+    char logPath[MAX_PATH];
+
+    // Build log path in user's %LOCALAPPDATA%\Temp (GetTempPathA)
+    if (GetTempPathA(MAX_PATH, tmpPath) == 0) {
+        // fallback to current dir
+        strncpy(tmpPath, ".\\", MAX_PATH);
+    }
+    size_t len = strlen(tmpPath);
+    if (len > 0 && tmpPath[len-1] != '\\' && tmpPath[len-1] != '/') {
+        strncat(tmpPath, "\\", MAX_PATH - len - 1);
+    }
+    snprintf(logPath, MAX_PATH, "%sws_init_log.txt", tmpPath);
 
     // debug: log to file
-    FILE *dbg = fopen("C:\\Temp\\ws_init_log.txt", "a");
+    FILE *dbg = fopen(logPath, "a");
     if (dbg) {
         fprintf(dbg, "initialize start. pid=%lu\n", (unsigned long)GetCurrentProcessId());
     }
