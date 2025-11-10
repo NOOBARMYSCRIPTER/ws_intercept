@@ -11,7 +11,8 @@ PLUGINS := $(BASE)/plugins
 SHARED := $(BASE)/shared
 SRC := $(BASE)/source
 
-CC  := i686-w64-mingw32-gcc
+CC  ?= i686-w64-mingw32-gcc
+AR  ?= i686-w64-mingw32-ar
 
 STD := c99
 CFLAGS := -std=$(STD) -O3 -fdata-sections -ffunction-sections -flto -DEXPORT -Wall -shared
