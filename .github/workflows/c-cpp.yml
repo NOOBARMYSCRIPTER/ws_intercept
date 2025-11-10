@@ -39,7 +39,13 @@ jobs:
           rm -rf build32 || true
           mkdir -p build32
           cd build32
-          CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar make -C .. -j$(nproc) || (echo "make failed"; exit 1)
+
+          CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar make -C .. ws.dll shared/libws.a || (echo "make ws.dll failed"; exit 1)
+
+          make -C ../source/plugins/ffxiv_pkt_log || (echo "make plugin ffxiv_pkt_log failed"; exit 1)
+          make -C ../source/plugins/ffxiv_pkt_log_2 || (echo "make plugin ffxiv_pkt_log_2 failed"; exit 1)
+          make -C ../source/plugins/log || (echo "make plugin log failed"; exit 1)
+
           mkdir -p out32/plugins
           cp -v ../ws.dll ./out32/ 2>/dev/null || true
           cp -v ../plugins/*.dll ./out32/plugins/ 2>/dev/null || true
@@ -55,7 +61,13 @@ jobs:
           rm -rf build64 || true
           mkdir -p build64
           cd build64
-          CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C .. -j$(nproc) || (echo "make failed"; exit 1)
+
+          CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C .. ws.dll shared/libws.a || (echo "make ws.dll failed"; exit 1)
+
+          make -C ../source/plugins/ffxiv_pkt_log || (echo "make plugin ffxiv_pkt_log failed"; exit 1)
+          make -C ../source/plugins/ffxiv_pkt_log_2 || (echo "make plugin ffxiv_pkt_log_2 failed"; exit 1)
+          make -C ../source/plugins/log || (echo "make plugin log failed"; exit 1)
+
           mkdir -p out64/plugins
           cp -v ../ws.dll ./out64/ 2>/dev/null || true
           cp -v ../plugins/*.dll ./out64/plugins/ 2>/dev/null || true
