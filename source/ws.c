@@ -46,6 +46,7 @@ LIBAPI void unregister_handler(uintptr_t plugin_id, WS_HANDLER_TYPE type)
 
 static DWORD WINAPI initialize(LPVOID param)
 {
+    MessageBoxA(NULL,"Init start","ws.dll",MB_OK);
     // Небольшая пауза, чтобы DllMain успел вернуться и освободить loader lock.
     Sleep(200);
 
