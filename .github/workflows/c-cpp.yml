@@ -28,43 +28,65 @@ jobs:
             unzip
             git
 
-      - name: Build x86 (i686)
+      # -----------------------------
+      # Build x86 core first
+      # -----------------------------
+      - name: Build x86 core (ws.dll + libws.a)
         shell: msys2 {0}
         env:
           MSYSTEM: MINGW32
           PATH: /mingw32/bin:/usr/bin:/bin:/mingw64/bin
         run: |
-          echo "=== Building i686 (i686-w64-mingw32) ==="
-          uname -a
-      
-          mkdir -p build
-          mkdir -p shared
-          mkdir -p plugins
-      
-          CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar make -C $GITHUB_WORKSPACE -j$(nproc) || (echo "make failed"; exit 1)
-      
-          mkdir -p out32/plugins
-          cp -v ../ws.dll ./out32/ 2>/dev/null || true
-          cp -v ../plugins/*.dll ./out32/plugins/ 2>/dev/null || true
+          echo "=== Building i686 core (ws.dll + libws.a) ==="
+          mkdir -p build shared plugins
+          CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar make -C $GITHUB_WORKSPACE ws.dll -j$(nproc) || (echo "core make failed"; exit 1)
 
-      - name: Build x64 (x86_64)
+      # -----------------------------
+      # Build x86 plugins
+      # -----------------------------
+      - name: Build x86 plugins
+        shell: msys2 {0}
+        env:
+          MSYSTEM: MINGW32
+          PATH: /mingw32/bin:/usr/bin:/bin:/mingw64/bin
+        run: |
+          echo "=== Building i686 plugins ==="
+          make -C $GITHUB_WORKSPACE source/plugins/ffxiv_pkt_log
+          make -C $GITHUB_WORKSPACE source/plugins/ffxiv_pkt_log_2
+          make -C $GITHUB_WORKSPACE source/plugins/log
+          mkdir -p out32/plugins
+          cp -v plugins/*.dll out32/plugins/ 2>/dev/null || true
+          cp -v ws.dll out32/ 2>/dev/null || true
+
+      # -----------------------------
+      # Build x64 core first
+      # -----------------------------
+      - name: Build x64 core (ws.dll + libws.a)
         shell: msys2 {0}
         env:
           MSYSTEM: MINGW64
           PATH: /mingw64/bin:/usr/bin:/bin:/mingw32/bin
         run: |
-          echo "=== Building x86_64 (x86_64-w64-mingw32) ==="
-          uname -a
-      
-          mkdir -p build
-          mkdir -p shared
-          mkdir -p plugins
-      
-          CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C $GITHUB_WORKSPACE -j$(nproc) || (echo "make failed"; exit 1)
-      
+          echo "=== Building x86_64 core (ws.dll + libws.a) ==="
+          mkdir -p build shared plugins
+          CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C $GITHUB_WORKSPACE ws.dll -j$(nproc) || (echo "core make failed"; exit 1)
+
+      # -----------------------------
+      # Build x64 plugins
+      # -----------------------------
+      - name: Build x64 plugins
+        shell: msys2 {0}
+        env:
+          MSYSTEM: MINGW64
+          PATH: /mingw64/bin:/usr/bin:/bin:/mingw32/bin
+        run: |
+          echo "=== Building x86_64 plugins ==="
+          make -C $GITHUB_WORKSPACE source/plugins/ffxiv_pkt_log
+          make -C $GITHUB_WORKSPACE source/plugins/ffxiv_pkt_log_2
+          make -C $GITHUB_WORKSPACE source/plugins/log
           mkdir -p out64/plugins
-          cp -v ../ws.dll ./out64/ 2>/dev/null || true
-          cp -v ../plugins/*.dll ./out64/plugins/ 2>/dev/null || true
+          cp -v plugins/*.dll out64/plugins/ 2>/dev/null || true
+          cp -v ws.dll out64/ 2>/dev/null || true
 
       - name: List built outputs
         shell: msys2 {0}
