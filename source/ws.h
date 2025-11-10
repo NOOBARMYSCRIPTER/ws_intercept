@@ -43,8 +43,8 @@ struct WS_plugins
     struct list_head plugins;
 };
 
-LIBAPI DWORD register_handler(tWS_plugin func, WS_HANDLER_TYPE type, char *comment);
-LIBAPI void unregister_handler(DWORD plugin_id, WS_HANDLER_TYPE type);
+LIBAPI uintptr_t register_handler(tWS_plugin func, WS_HANDLER_TYPE type, char *comment);
+LIBAPI void unregister_handler(uintptr_t plugin_id, WS_HANDLER_TYPE type);
 
 LIBVAR EXT struct WS_plugins ws_plugins;
 LIBVAR EXT struct WS_handler ws_handlers;
