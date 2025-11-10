@@ -15,7 +15,7 @@ struct WS_handler ws_handlers;
 
 typedef int (WINAPI *tWS)(SOCKET, const char*, int, int); //For base functions
 
-static DWORD WINAPI initialize(LPVOID param);
+static uintptr_t WINAPI initialize(LPVOID param);
 static void revert();
 
 static int WINAPI repl_recv(SOCKET s, const char *buf, int len, int flags);
@@ -28,12 +28,12 @@ static int (WINAPI *pSend)(SOCKET s, const char* buf, int len, int flags) = NULL
 //Keep track to undo change before closing
 static BYTE replaced_send[10];
 static BYTE replaced_recv[10];
-static DWORD orig_size_send = 0;
-static DWORD orig_size_recv = 0;
-static DWORD addr_send = 0; 
-static DWORD addr_recv = 0;
+static uintptr_t orig_size_send = 0;
+static uintptr_t orig_size_recv = 0;
+static uintptr_t addr_send = 0; 
+static uintptr_t addr_recv = 0;
 
-LIBAPI DWORD register_handler(tWS_plugin func, WS_HANDLER_TYPE type, char *comment)
+LIBAPI uintptr_t register_handler(tWS_plugin func, WS_HANDLER_TYPE type, char *comment)
 {
 	if(comment == NULL)
 		comment = (char*)"";
@@ -45,10 +45,10 @@ LIBAPI DWORD register_handler(tWS_plugin func, WS_HANDLER_TYPE type, char *comme
 		list_add_tail(&(t->ws_handlers_send),&(ws_handlers.ws_handlers_send));
 	else
 		list_add_tail(&(t->ws_handlers_recv),&(ws_handlers.ws_handlers_recv));
-	return (DWORD)(t); //Returns pointer to node we just added
+	return (uintptr_t)(t); //Returns pointer to node we just added
 }
 
-LIBAPI void unregister_handler(DWORD plugin_id, WS_HANDLER_TYPE type)
+LIBAPI void unregister_handler(uintptr_t plugin_id, WS_HANDLER_TYPE type)
 {
 	if(!plugin_id)
 		return;
@@ -59,7 +59,7 @@ LIBAPI void unregister_handler(DWORD plugin_id, WS_HANDLER_TYPE type)
 	return;
 }
 
-BOOL APIENTRY DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
+BOOL APIENTRY DllMain(HINSTANCE instance, uintptr_t reason, LPVOID reserved)
 {
 	switch(reason)
 	{
@@ -81,12 +81,12 @@ BOOL APIENTRY DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
 	return TRUE;
 }
 
-static DWORD WINAPI initialize(LPVOID param)
+static uintptr_t WINAPI initialize(LPVOID param)
 {
 	MessageBoxA(NULL, "DLL loaded!", "Debug", MB_OK);
-    DWORD addr;
+    uintptr_t addr;
     BYTE replaced[10];
-    DWORD orig_size;
+    uintptr_t orig_size;
     char cwdBuf[MAX_PATH];
     char tmpPath[MAX_PATH];
     char logPath[MAX_PATH];
@@ -108,8 +108,8 @@ static DWORD WINAPI initialize(LPVOID param)
         fprintf(dbg, "initialize start. pid=%lu\n", (unsigned long)GetCurrentProcessId());
     }
 
-    addr_send = (DWORD)GetProcAddress(GetModuleHandle(TEXT("WS2_32.dll")), "send");
-    addr_recv = (DWORD)GetProcAddress(GetModuleHandle(TEXT("WS2_32.dll")), "recv");
+    addr_send = (uintptr_t)GetProcAddress(GetModuleHandle(TEXT("WS2_32.dll")), "send");
+    addr_recv = (uintptr_t)GetProcAddress(GetModuleHandle(TEXT("WS2_32.dll")), "recv");
 
     if (dbg) {
         if (addr_send) fprintf(dbg, "addr_send nonzero: 0x%08lX\n", (unsigned long)addr_send);
@@ -123,7 +123,7 @@ static DWORD WINAPI initialize(LPVOID param)
         pSend = (tWS)VirtualAlloc(NULL, (SIZE_T)orig_size_send + 32, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
         if (pSend) {
             memcpy((void*)pSend, replaced_send, orig_size_send);
-            apply_patch(0xE9, (DWORD)((BYTE*)pSend + orig_size_send), (void*)(addr + orig_size_send), &orig_size, replaced);
+            apply_patch(0xE9, (uintptr_t)((BYTE*)pSend + orig_size_send), (void*)(addr + orig_size_send), &orig_size, replaced);
         } else {
             if (dbg) fprintf(dbg, "VirtualAlloc for pSend failed, GetLastError=%lu\n", (unsigned long)GetLastError());
         }
@@ -137,7 +137,7 @@ static DWORD WINAPI initialize(LPVOID param)
         pRecv = (tWS)VirtualAlloc(NULL, (SIZE_T)orig_size_recv + 32, MEM_RESERVE | MEM_COMMIT, PAGE_EXECUTE_READWRITE);
         if (pRecv) {
             memcpy((void*)pRecv, replaced_recv, orig_size_recv);
-            apply_patch(0xE9, (DWORD)((BYTE*)pRecv + orig_size_recv), (void*)(addr + orig_size_recv), &orig_size, replaced);
+            apply_patch(0xE9, (uintptr_t)((BYTE*)pRecv + orig_size_recv), (void*)(addr + orig_size_recv), &orig_size, replaced);
         } else {
             if (dbg) fprintf(dbg, "VirtualAlloc for pRecv failed, GetLastError=%lu\n", (unsigned long)GetLastError());
         }
