@@ -26,6 +26,23 @@ jobs:
             pkg-config
             unzip
             git
+            mingw-w64-x86_64-binutils
+
+      # -----------------------------
+      # Prepare MinHook import lib
+      # -----------------------------
+      - name: Prepare MinHook import lib
+        shell: msys2 {0}
+        env:
+          MSYSTEM: MINGW64
+          PATH: /mingw64/bin:/usr/bin:/bin
+        run: |
+          echo "=== Preparing MinHook import library ==="
+          mkdir -p libs/MinHook
+          cp source/bin/MinHook.x64.dll libs/MinHook/
+          cd libs/MinHook
+          gendef MinHook.x64.dll
+          x86_64-w64-mingw32-dlltool -d MinHook.x64.def -l libMinHook.a
 
       # -----------------------------
       # Build x64 core (ws.dll + libws.a)
@@ -39,7 +56,10 @@ jobs:
           echo "=== Building x86_64 core (ws.dll + libws.a) ==="
           make -C $GITHUB_WORKSPACE clean || true
           mkdir -p build shared plugins
-          CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C $GITHUB_WORKSPACE ws.dll -j$(nproc) || exit 1
+          CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar \
+          CFLAGS="-Ilibs/MinHook" \
+          LDFLAGS="-Llibs/MinHook -lMinHook -lws2_32 -liphlpapi -lpsapi -static -shared -Wl,--gc-sections -Wl,--out-implib,shared/libws.a -s" \
+          make -C $GITHUB_WORKSPACE ws.dll -j$(nproc) || exit 1
           mkdir -p out64
           cp -v ws.dll out64/
 
