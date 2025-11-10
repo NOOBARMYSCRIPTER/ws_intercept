@@ -96,6 +96,14 @@ static DWORD WINAPI initialize(LPVOID param)
 
 	addr_send = (DWORD)GetProcAddress(GetModuleHandle(TEXT("WS2_32.dll")), "send");
 	addr_recv = (DWORD)GetProcAddress(GetModuleHandle(TEXT("WS2_32.dll")), "recv");
+
+	FILE *dbg = fopen("C:\\Temp\\ws_init_log.txt", "a");
+	if (dbg) {
+	    fprintf(dbg, "initialize start. pid=%lu\n", GetCurrentProcessId());
+	    if (addr_send) fprintf(dbg, "addr_send nonzero: 0x%08X\n", addr_send);
+	    if (addr_recv) fprintf(dbg, "addr_recv nonzero: 0x%08X\n", addr_recv);
+	    fclose(dbg);
+	}
 	
 	//TODO: Clean this area up and move these to some inline function
 	addr = addr_send;
@@ -114,11 +122,23 @@ static DWORD WINAPI initialize(LPVOID param)
 		apply_patch(0xE9,(DWORD)pRecv+orig_size_recv,(void*)(addr+orig_size_recv),&orig_size, replaced); 
 	}
 
+	dbg = fopen("C:\\Temp\\ws_init_log.txt", "a");
+	if(dbg){
+	    fprintf(dbg, "apply_patch send returned: orig_size_send=%u, pSend=%p\n", orig_size_send, pSend);
+	    fprintf(dbg, "apply_patch recv returned: orig_size_recv=%u, pRecv=%p\n", orig_size_recv, pRecv);
+	    fclose(dbg);
+	}
+
 	//Initialize lists
 	INIT_LIST_HEAD(&ws_handlers.ws_handlers_send);
 	INIT_LIST_HEAD(&ws_handlers.ws_handlers_recv);
 	INIT_LIST_HEAD(&ws_plugins.plugins);
 	load_plugins("./plugins/", &ws_plugins);
+	dbg = fopen("C:\\Temp\\ws_init_log.txt", "a");
+	if(dbg){
+	    fprintf(dbg, "Calling load_plugins, cwd=%s\n", __TODO__ );
+	    fclose(dbg);
+	}
 	return 0;
 }
 
