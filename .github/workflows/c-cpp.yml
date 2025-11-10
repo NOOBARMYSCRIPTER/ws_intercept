@@ -41,7 +41,7 @@ jobs:
           mkdir -p shared
           mkdir -p plugins
       
-          CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar make -C .. -j$(nproc) || (echo "make failed"; exit 1)
+          CC=i686-w64-mingw32-gcc AR=i686-w64-mingw32-ar make -C $GITHUB_WORKSPACE -j$(nproc) || (echo "make failed"; exit 1)
       
           mkdir -p out32/plugins
           cp -v ../ws.dll ./out32/ 2>/dev/null || true
@@ -60,7 +60,7 @@ jobs:
           mkdir -p shared
           mkdir -p plugins
       
-          CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C .. -j$(nproc) || (echo "make failed"; exit 1)
+          CC=x86_64-w64-mingw32-gcc AR=x86_64-w64-mingw32-ar make -C $GITHUB_WORKSPACE -j$(nproc) || (echo "make failed"; exit 1)
       
           mkdir -p out64/plugins
           cp -v ../ws.dll ./out64/ 2>/dev/null || true
