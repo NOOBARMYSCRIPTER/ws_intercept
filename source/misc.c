@@ -9,27 +9,27 @@ struct patch_t
 };
 #pragma pack()
 
-BOOL apply_patch(BYTE eType, SIZE_T dwAddress, const void *pTarget, SIZE_T *orig_size, BYTE *replaced)
+BOOL apply_patch(BYTE eType, DWORD64 dwAddress, const void *pTarget, DWORD *orig_size, BYTE *replaced)
 {
-    SIZE_T dwOldValue, dwTemp;
+    DWORD dwOldValue, dwTemp;
     struct patch_t pWrite =
     {
         eType,
-        (SIZE_T)pTarget - (dwAddress + sizeof(SIZE_T) + sizeof(BYTE))
+        (DWORD)((uintptr_t)pTarget - (dwAddress + sizeof(DWORD) + sizeof(BYTE)))
     };
 
-    VirtualProtect((LPVOID)dwAddress, sizeof(struct patch_t), PAGE_EXECUTE_READWRITE, (PDWORD)&dwOldValue);
-    ReadProcessMemory(GetCurrentProcess(), (LPCVOID)dwAddress, (LPVOID)replaced, sizeof(pWrite), orig_size);
+    VirtualProtect((LPVOID)dwAddress, sizeof(struct patch_t), PAGE_EXECUTE_READWRITE, &dwOldValue);
+    ReadProcessMemory(GetCurrentProcess(), (LPVOID)dwAddress, (LPVOID)replaced, sizeof(pWrite), (PDWORD)orig_size);
     BOOL bSuccess = WriteProcessMemory(GetCurrentProcess(), (LPVOID)dwAddress, &pWrite, sizeof(pWrite), NULL);
     VirtualProtect((LPVOID)dwAddress, sizeof(struct patch_t), dwOldValue, &dwTemp);
 
     return bSuccess;
 }
 
-inline void exec_copy(SIZE_T addr, BYTE *replaced, SIZE_T orig_size)
+inline void exec_copy(DWORD64 addr, BYTE *replaced, DWORD orig_size)
 {
-    SIZE_T old_val, temp;
-    VirtualProtect((LPVOID)addr, orig_size, PAGE_EXECUTE_READWRITE, (PDWORD)&old_val);
+    DWORD old_val, temp;
+    VirtualProtect((LPVOID)addr, (SIZE_T)orig_size, PAGE_EXECUTE_READWRITE, &old_val);
     memcpy((void*)addr, replaced, orig_size);
-    VirtualProtect((LPVOID)addr, orig_size, old_val, &temp);
+    VirtualProtect((LPVOID)addr, (SIZE_T)orig_size, old_val, &temp);
 }
