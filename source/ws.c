@@ -181,6 +181,7 @@ static void revert()
 
 static int WINAPI repl_send(SOCKET s, const char *buf, int len, int flags)
 {
+	MessageBoxA(NULL, "hooked_send triggered", "DEBUG", 0);
 	list_for_each(t, &ws_handlers.ws_handlers_send)
 		list_entry(t, struct WS_handler, ws_handlers_send)->func(&s,buf,&len,&flags);
 	return pSend(s,buf,len,flags);
@@ -188,6 +189,7 @@ static int WINAPI repl_send(SOCKET s, const char *buf, int len, int flags)
 
 static int WINAPI repl_recv(SOCKET s, const char *buf, int len, int flags)
 {
+	MessageBoxA(NULL, "hooked_recv triggered", "DEBUG", 0);
 	list_for_each(t, &ws_handlers.ws_handlers_recv)
 		list_entry(t, struct WS_handler, ws_handlers_recv)->func(&s,buf,&len,&flags);
 	return pRecv(s,buf,len,flags);
