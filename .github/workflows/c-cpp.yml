@@ -31,6 +31,7 @@ jobs:
       - name: Build x86 (i686)
         shell: msys2 {0}
         env:
+          MSYSTEM: MINGW32
           PATH: /mingw32/bin:/usr/bin:/bin:/mingw64/bin
         run: |
           echo "=== Building i686 (i686-w64-mingw32) ==="
@@ -46,6 +47,7 @@ jobs:
       - name: Build x64 (x86_64)
         shell: msys2 {0}
         env:
+          MSYSTEM: MINGW64
           PATH: /mingw64/bin:/usr/bin:/bin:/mingw32/bin
         run: |
           echo "=== Building x86_64 (x86_64-w64-mingw32) ==="
