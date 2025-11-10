@@ -10,7 +10,7 @@ static DWORD WINAPI setup(LPVOID param);
 static DWORD WINAPI handle_buf(LPVOID param);
 
 void WINAPI log_ws(SOCKET *s, const char *buf, int *len, int *flags);
-int UncompressData( const unsigned char* abSrc, int nLenSrc, unsigned char* abDst, int nLenDst );
+int UncompressData(const unsigned char* abSrc, int nLenSrc, unsigned char* abDst, int nLenDst);
 
 static DWORD threadIDConsole = 0;
 static DWORD threadIDBuf = 0;
@@ -34,37 +34,39 @@ BOOL APIENTRY DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
 			if (threadIDBuf)
 				PostThreadMessage(threadIDBuf, WM_QUIT, 0, 0);
 			break;
-		case DLL_THREAD_ATTACH:
-			break;
-		case DLL_THREAD_DETACH:
-			break;
+		case DLL_THREAD_ATTACH: break;
+		case DLL_THREAD_DETACH: break;
 	}
 	return TRUE;
 }
 
 inline void handle_chat(uint8_t *buf, size_t size)
 {
-
-        struct Pkt_FFXIV_chat *chat = malloc(sizeof(struct Pkt_FFXIV_chat));
-        memcpy(chat, buf, size);
+	struct Pkt_FFXIV_chat *chat = malloc(sizeof(struct Pkt_FFXIV_chat));
+	memcpy(chat, buf, size);
 	if(!strlen(chat->name) || !strlen(chat->message))
+	{
+		free(chat);
 		return;
-        LOG("[%s]: %s", chat->name, chat->message);
-        free(chat);
+	}
+	LOG("[%s]: %s", chat->name, chat->message);
+	free(chat);
 }
 
 inline void handle_chat_2(uint8_t *buf, size_t size)
 {
-
-        struct Pkt_FFXIV_chat_2 *chat = malloc(sizeof(struct Pkt_FFXIV_chat_2));
-        memcpy(chat, buf, size);
+	struct Pkt_FFXIV_chat_2 *chat = malloc(sizeof(struct Pkt_FFXIV_chat_2));
+	memcpy(chat, buf, size);
 	if(!strlen(chat->name) || !strlen(chat->message))
+	{
+		free(chat);
 		return;
-        LOG("[%s]: %s", chat->name, chat->message);
-        free(chat);
+	}
+	LOG("[%s]: %s", chat->name, chat->message);
+	free(chat);
 }
 
-static DWORD WINAPI handle_buf(LPVOID PARAM) //Serialize packet parsing, TODO: safety for adding a new entry while working through
+static DWORD WINAPI handle_buf(LPVOID PARAM)
 {
 	while(!setup_flag);
 	LOG("Log start!");
@@ -75,7 +77,6 @@ static DWORD WINAPI handle_buf(LPVOID PARAM) //Serialize packet parsing, TODO: s
 		list_for_each_safe(t, s, &buffer.buf)
 		{
 			struct buffer_list *tmp = list_entry(t, struct buffer_list, buf);			
-			//Decompress stream	
 			if(tmp->compressed)
 			{
 				uint8_t *t_data = malloc(CHUNK);
@@ -114,10 +115,7 @@ void WINAPI log_ws(SOCKET *s, const char *buf, int *len, int *flags)
 	struct buffer_list *t = malloc(sizeof(struct buffer_list));
 
 	if(p.size > *len)
-	{
-//		LOG("p.size > len (%08X > %08X)", p.size, *len); //I'm sure I'll have to handle this case properly eventually
 		return;
-	}
 
 	t->time = p.timestamp;
 	t->size = p.size;
@@ -125,8 +123,8 @@ void WINAPI log_ws(SOCKET *s, const char *buf, int *len, int *flags)
 	t->flag = p.flag1;
 	t->compressed = p.flag2;
 
-	t->data	= malloc(p.size); //Only the message data is in here
-	memcpy(t->data,buf+sizeof(struct Pkt_FFXIV),p.size); //Let the thread handle it
+	t->data	= malloc(p.size);
+	memcpy(t->data,buf+sizeof(struct Pkt_FFXIV),p.size);
 	list_add_tail(&(t->buf),&(buffer.buf));
 	return;
 }
@@ -154,23 +152,22 @@ static DWORD WINAPI setup(LPVOID param)
 	return 0;
 }
 
-
-int UncompressData( const unsigned char* abSrc, int nLenSrc, unsigned char* abDst, int nLenDst )
+int UncompressData(const unsigned char* abSrc, int nLenSrc, unsigned char* abDst, int nLenDst)
 {
     z_stream zInfo ={0};
-    zInfo.total_in=  zInfo.avail_in=  nLenSrc;
-    zInfo.avail_out= nLenDst;
-    zInfo.next_in= (unsigned char*)abSrc;
-    zInfo.next_out= abDst;
+    zInfo.total_in = zInfo.avail_in = nLenSrc;
+    zInfo.avail_out = nLenDst;
+    zInfo.next_in = (unsigned char*)abSrc;
+    zInfo.next_out = abDst;
 
-    int nErr, nRet= -1;
-    nErr= inflateInit( &zInfo );               // zlib function
-    if ( nErr == Z_OK ) {
-        nErr= inflate( &zInfo, Z_FINISH );     // zlib function
-        if ( nErr == Z_STREAM_END ) {
-            nRet= zInfo.total_out;
-        }
+    int nErr, nRet = -1;
+    nErr = inflateInit(&zInfo);
+    if(nErr == Z_OK)
+    {
+        nErr = inflate(&zInfo, Z_FINISH);
+        if(nErr == Z_STREAM_END)
+            nRet = zInfo.total_out;
     }
-    inflateEnd( &zInfo );   // zlib function
-    return( nRet ); // -1 or len of output
+    inflateEnd(&zInfo);
+    return nRet;
 }
