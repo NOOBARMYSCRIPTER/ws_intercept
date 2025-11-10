@@ -46,19 +46,100 @@ LIBAPI void unregister_handler(uintptr_t plugin_id, WS_HANDLER_TYPE type)
 
 static DWORD WINAPI initialize(LPVOID param)
 {
-    if(MH_Initialize() != MH_OK) return 1;
+    // Небольшая пауза, чтобы DllMain успел вернуться и освободить loader lock.
+    Sleep(200);
 
-    if(MH_CreateHookApi(L"Ws2_32.dll", "send", repl_send, (LPVOID*)&origSend) != MH_OK) return 1;
-    if(MH_EnableHook(MH_ALL_HOOKS) != MH_OK) return 1;
+    char tmpPath[MAX_PATH];
+    char logPath[MAX_PATH];
+    if (GetTempPathA(MAX_PATH, tmpPath) == 0) {
+        strncpy(tmpPath, ".\\", MAX_PATH);
+    }
+    if (tmpPath[strlen(tmpPath)-1] != '\\')
+        strncat(tmpPath, "\\", MAX_PATH - strlen(tmpPath) - 1);
+    snprintf(logPath, MAX_PATH, "%sws_init_log.txt", tmpPath);
 
-    if(MH_CreateHookApi(L"Ws2_32.dll", "recv", repl_recv, (LPVOID*)&origRecv) != MH_OK) return 1;
-    if(MH_EnableHook(MH_ALL_HOOKS) != MH_OK) return 1;
+    FILE *dbg = fopen(logPath, "a");
+    if (!dbg) {
+        dbg = fopen("ws_init_log.txt", "a");
+    }
+    if (dbg) {
+        fprintf(dbg, "== initialize start, pid=%lu ==\n", (unsigned long)GetCurrentProcessId());
+        fflush(dbg);
+    }
+
+    HMODULE hMin = GetModuleHandleW(L"MinHook.x64.dll");
+    if (!hMin) {
+        if (dbg) fprintf(dbg, "MinHook.x64.dll not in process. Try LoadLibrary...\n");
+        hMin = LoadLibraryW(L"MinHook.x64.dll");
+        if (!hMin) {
+            if (dbg) fprintf(dbg, "LoadLibrary(MinHook.x64.dll) failed, GetLastError=%lu\n", (unsigned long)GetLastError());
+            if (dbg) { fflush(dbg); fclose(dbg); }
+            return 1;
+        } else {
+            if (dbg) fprintf(dbg, "Loaded MinHook.x64.dll ok.\n");
+        }
+    } else {
+        if (dbg) fprintf(dbg, "MinHook.x64.dll already loaded.\n");
+    }
+
+    uintptr_t addr_send = (uintptr_t)GetProcAddress(GetModuleHandle(TEXT("Ws2_32.dll")), "send");
+    uintptr_t addr_recv = (uintptr_t)GetProcAddress(GetModuleHandle(TEXT("Ws2_32.dll")), "recv");
+    if (dbg) {
+        fprintf(dbg, "addr_send=%p, addr_recv=%p\n", (void*)addr_send, (void*)addr_recv);
+    }
+
+    MH_STATUS st;
+    st = MH_Initialize();
+    if (dbg) fprintf(dbg, "MH_Initialize => %d\n", (int)st);
+    if (st != MH_OK) {
+        if (dbg) { fflush(dbg); fclose(dbg); }
+        return 1;
+    }
+
+    st = MH_CreateHookApi(L"Ws2_32.dll", "send", (LPVOID)repl_send, (LPVOID*)&origSend);
+    if (dbg) fprintf(dbg, "MH_CreateHookApi(send) => %d\n", (int)st);
+    if (st != MH_OK) {
+        MH_Uninitialize();
+        if (dbg) { fflush(dbg); fclose(dbg); }
+        return 1;
+    }
+
+    st = MH_CreateHookApi(L"Ws2_32.dll", "recv", (LPVOID)repl_recv, (LPVOID*)&origRecv);
+    if (dbg) fprintf(dbg, "MH_CreateHookApi(recv) => %d\n", (int)st);
+    if (st != MH_OK) {
+        MH_RemoveHook(MH_ALL_HOOKS);
+        MH_Uninitialize();
+        if (dbg) { fflush(dbg); fclose(dbg); }
+        return 1;
+    }
+
+    st = MH_EnableHook(MH_ALL_HOOKS);
+    if (dbg) fprintf(dbg, "MH_EnableHook(MH_ALL_HOOKS) => %d\n", (int)st);
+    if (st != MH_OK) {
+        MH_RemoveHook(MH_ALL_HOOKS);
+        MH_Uninitialize();
+        if (dbg) { fflush(dbg); fclose(dbg); }
+        return 1;
+    }
 
     INIT_LIST_HEAD(&ws_handlers.ws_handlers_send);
     INIT_LIST_HEAD(&ws_handlers.ws_handlers_recv);
     INIT_LIST_HEAD(&ws_plugins.plugins);
 
+    if (dbg) {
+        char cwd[MAX_PATH];
+        if (GetCurrentDirectoryA(MAX_PATH, cwd) > 0)
+            fprintf(dbg, "Calling load_plugins, cwd=%s\n", cwd);
+        fflush(dbg);
+    }
+
     load_plugins("./plugins/", &ws_plugins);
+
+    if (dbg) {
+        fprintf(dbg, "load_plugins returned. initialize finished.\n\n");
+        fflush(dbg);
+        fclose(dbg);
+    }
 
     return 0;
 }
@@ -68,9 +149,11 @@ BOOL APIENTRY DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
     switch(reason)
     {
         case DLL_PROCESS_ATTACH:
+            DisableThreadLibraryCalls(instance);
             CreateThread(NULL, 0, initialize, NULL, 0, NULL);
             break;
         case DLL_PROCESS_DETACH:
+            // Отключаем хуки и выгружаем плагины
             MH_DisableHook(MH_ALL_HOOKS);
             MH_Uninitialize();
             list_for_each(t, &ws_plugins.plugins)
